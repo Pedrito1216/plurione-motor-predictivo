@@ -1,16 +1,20 @@
 import asyncio
 import random
 from faker import Faker
-from sqlalchemy import select
+from sqlalchemy import select, text
 from database import SessionLocal
 from models import Departamento, Puesto, Empleado, HistorialSalario, EvaluacionDesempeno
 
-# Inicializamos Faker configurado para México
 fake = Faker('es_MX')
 
 async def generar_datos_sinteticos():
     async with SessionLocal() as db:
-        print("Iniciando generación de datos...")
+        print("Limpiando registros anteriores para evitar sesgo cruzado...")
+        # TRUNCATE con CASCADE borra a los empleados y sus historiales limpiecito
+        await db.execute(text("TRUNCATE TABLE empleados CASCADE"))
+        await db.commit()
+
+        print("Iniciando generación de nuevos datos...")
 
         # 1. Crear Catálogos (Solo si están vacíos)
         deptos_nombres = ["Ventas", "Tecnología", "Operaciones", "Recursos Humanos"]
@@ -20,45 +24,39 @@ async def generar_datos_sinteticos():
             {"titulo": "Gerente", "min": 45000, "max": 80000}
         ]
 
-        deptos = [Departamento(nombre=n, presupuesto_anual=random.randint(2, 10)*1000000) for n in deptos_nombres]
-        puestos = [Puesto(titulo=p["titulo"], rango_salarial_min=p["min"], rango_salarial_max=p["max"]) for p in puestos_info]
-        
-        db.add_all(deptos)
-        db.add_all(puestos)
-        await db.commit()
+        # Verificamos si los catálogos ya existen
+        deptos_existentes = (await db.execute(select(Departamento))).scalars().all()
+        if not deptos_existentes:
+            db.add_all([Departamento(nombre=n, presupuesto_anual=random.randint(2, 10)*1000000) for n in deptos_nombres])
+            db.add_all([Puesto(titulo=p["titulo"], rango_salarial_min=p["min"], rango_salarial_max=p["max"]) for p in puestos_info])
+            await db.commit()
 
-        # Recuperar los IDs generados por PostgreSQL
         depto_ids = [row[0] for row in (await db.execute(select(Departamento.id))).all()]
         puesto_ids = [row[0] for row in (await db.execute(select(Puesto.id))).all()]
 
-        # 2. Generar 1,000 Empleados con Patrones para Machine Learning
-        print("Generando 1,000 perfiles de empleados...")
+        # 2. Generar 1,000 Empleados con NUEVA CORRELACIÓN MATEMÁTICA
+        print("Generando 1,000 perfiles de empleados con lógica proporcional...")
         
         for _ in range(1000):
-            # Variables base
-            distancia = random.randint(2, 50)  # Kilómetros de casa a la oficina
+            distancia = random.randint(2, 50)
             puesto_seleccionado = random.choice(puestos_info)
             salario = random.randint(puesto_seleccionado["min"], puesto_seleccionado["max"])
-            desempeno = round(random.uniform(2.0, 5.0), 1) # Escala del 1 al 5
+            desempeno = round(random.uniform(1.0, 5.0), 1)
             
-            # --- CORRELACIÓN MATEMÁTICA PARA EL MODELO ---
-            # Partimos de un 10% de probabilidad base de que el empleado haya renunciado
             probabilidad_renuncia = 0.10 
             
-            # Si vive a más de 30 km, aumenta el riesgo de fuga drásticamente
             if distancia > 30: 
                 probabilidad_renuncia += 0.35 
-            # Si su salario está muy cerca del mínimo de su puesto, aumenta el riesgo
             if salario < (puesto_seleccionado["min"] + 2000): 
                 probabilidad_renuncia += 0.25
-            # Si su desempeño cayó por debajo de 3.0, es probable que se haya ido o lo hayan despedido
-            if desempeno < 3.0:
-                probabilidad_renuncia += 0.20
+            
+            # NUEVA LÓGICA: Penalización proporcional lineal
+            # Si tiene 5.0, suma 0. Si tiene 1.0, suma 0.40 (40% más de riesgo)
+            penalizacion_desempeno = (5.0 - desempeno) * 0.10
+            probabilidad_renuncia += penalizacion_desempeno
 
-            # Determinamos si el empleado sigue activo o ya rotó
             sigue_activo = random.random() > probabilidad_renuncia
 
-            # Insertamos al Empleado
             nuevo_empleado = Empleado(
                 departamento_id=random.choice(depto_ids),
                 puesto_id=puesto_ids[puestos_info.index(puesto_seleccionado)],
@@ -67,25 +65,15 @@ async def generar_datos_sinteticos():
                 estado_activo=sigue_activo
             )
             db.add(nuevo_empleado)
-            await db.flush() # Flush nos permite obtener el ID del empleado sin hacer commit global aún
+            await db.flush()
 
-            # Agregamos su historial base
-            historial = HistorialSalario(
-                empleado_id=nuevo_empleado.id,
-                monto_mensual=salario,
-                fecha_cambio=nuevo_empleado.fecha_contratacion,
-                motivo="Contratación Inicial"
-            )
-            evaluacion = EvaluacionDesempeno(
-                empleado_id=nuevo_empleado.id,
-                fecha_evaluacion=fake.date_between(start_date='-1y', end_date='today'),
-                puntuacion_kpi=desempeno,
-                cumplimiento_metas=desempeno * 20 # Lo convertimos a porcentaje (ej. 4.0 -> 80%)
-            )
-            db.add_all([historial, evaluacion])
+            db.add_all([
+                HistorialSalario(empleado_id=nuevo_empleado.id, monto_mensual=salario, fecha_cambio=nuevo_empleado.fecha_contratacion, motivo="Contratación Inicial"),
+                EvaluacionDesempeno(empleado_id=nuevo_empleado.id, fecha_evaluacion=fake.date_between(start_date='-1y', end_date='today'), puntuacion_kpi=desempeno, cumplimiento_metas=desempeno * 20)
+            ])
 
         await db.commit()
-        print("¡Dataset sintético inyectado exitosamente! La base de datos está lista para el modelo.")
+        print("¡Dataset sintético proporcional inyectado exitosamente!")
 
 if __name__ == "__main__":
     asyncio.run(generar_datos_sinteticos())
