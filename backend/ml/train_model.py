@@ -49,7 +49,7 @@ def entrenar_modelo():
     
     print("3. Entrenando el algoritmo Random Forest...")
     # Creamos un bosque de 100 árboles de decisión
-    modelo = RandomForestClassifier(n_estimators=100, random_state=42)
+    modelo = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=42)
     modelo.fit(X_train, y_train)
     
     print("4. Evaluando el modelo...")

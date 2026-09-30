@@ -37,7 +37,7 @@ async def generar_datos_sinteticos():
         # 2. Generar 1,000 Empleados con NUEVA CORRELACIÓN MATEMÁTICA
         print("Generando 1,000 perfiles de empleados con lógica proporcional...")
         
-        for _ in range(1000):
+        for _ in range(10000):
             distancia = random.randint(2, 50)
             puesto_seleccionado = random.choice(puestos_info)
             salario = random.randint(puesto_seleccionado["min"], puesto_seleccionado["max"])
