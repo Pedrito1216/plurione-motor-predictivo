@@ -130,10 +130,43 @@ async def simular_riesgo(datos: SimulacionRiesgo):
     prediccion = modelo_ia.predict(df_entrada)[0]
     probabilidad = modelo_ia.predict_proba(df_entrada)[0][1]
     
+    # --- NUEVA LÓGICA: GENERACIÓN DE RAZONAMIENTO (EXPLAINABLE AI) ---
+    razonamiento = ""
+    if prediccion == 1: # ALTO RIESGO
+        razones = []
+        if datos.distancia_km > 20:
+            razones.append("la gran distancia a la oficina genera desgaste diario")
+        if datos.salario < 20000:
+            razones.append("el salario mensual se encuentra por debajo del umbral competitivo de retención")
+        if datos.desempeno > 4.0 and datos.salario < 25000:
+            razones.append("presenta un alto desempeño pero la compensación no es proporcional (alto riesgo de fuga por subvaloración)")
+        elif datos.desempeno < 2.5:
+            razones.append("existe una baja calificación de desempeño que indica falta de motivación o encaje")
+            
+        if razones:
+            razonamiento = "El modelo detecta alto riesgo principalmente porque " + " y ".join(razones) + "."
+        else:
+            razonamiento = "El modelo detecta un patrón de riesgo generalizado basado en la combinación de su salario, distancia y evaluación."
+    else: # ESTABLE
+        razonamiento = "El perfil presenta métricas saludables de retención. "
+        fortalezas = []
+        if datos.distancia_km <= 15:
+            fortalezas.append("su cercanía a la oficina reduce el estrés de traslado")
+        if datos.salario >= 25000:
+            fortalezas.append("cuenta con un salario competitivo dentro del mercado")
+        if 3.0 <= datos.desempeno <= 4.5:
+            fortalezas.append("mantiene un desempeño constante y adecuado")
+            
+        if fortalezas:
+            razonamiento += "Destaca que " + " y ".join(fortalezas) + "."
+        else:
+            razonamiento += "Sus condiciones actuales no muestran indicadores críticos de fuga."
+
     return {
         "alerta": "🔴 ALTO RIESGO DE FUGA" if prediccion == 1 else "🟢 EMPLEADO ESTABLE",
         "probabilidad_renuncia": f"{probabilidad * 100:.2f}%",
-        "parametros_analizados": datos.model_dump()
+        "parametros_analizados": datos.model_dump(),
+        "razonamiento": razonamiento
     }
 
 @app.post("/api/v1/empleados", summary="Contratar Empleado (Protegido)")
