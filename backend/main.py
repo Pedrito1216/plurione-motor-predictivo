@@ -1,82 +1,174 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from database import SessionLocal
-from models import Empleado
+from models import Empleado, UsuarioAdmin, HistorialSalario, EvaluacionDesempeno
+from security import verificar_password, crear_token_acceso, CLAVE_SECRETA, ALGORITMO
 import joblib
 import os
 import pandas as pd
+import jwt
+import uuid
+from datetime import date
 
-# Inicializamos la aplicación FastAPI
 app = FastAPI(
     title="Motor Predictivo de Rotación API",
     description="API REST para la gestión de empleados y predicción de riesgo (PluriOne)",
-    version="1.0.0"
+    version="2.1.0"
 )
 
-# 1. CARGAMOS EL MODELO DE IA AL INICIAR EL SERVIDOR
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --- 1. CARGA DEL MODELO IA ---
 RUTA_MODELO = os.path.join(os.path.dirname(__file__), "ml", "modelo_rotacion.pkl")
 try:
     modelo_ia = joblib.load(RUTA_MODELO)
     print("Cerebro de IA cargado correctamente.")
 except Exception as e:
     modelo_ia = None
-    print(f"Advertencia: No se pudo cargar el modelo de IA. Verifica la ruta: {RUTA_MODELO}")
+    print(f"Advertencia: No se pudo cargar el modelo de IA: {RUTA_MODELO}")
 
-# 2. ESQUEMA DE DATOS PARA EL SIMULADOR
+# --- 2. SEGURIDAD JWT ---
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login")
+
+async def obtener_admin_actual(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, CLAVE_SECRETA, algorithms=[ALGORITMO])
+        email: str = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+        return email
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="El token ha expirado")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Token inválido")
+
+# --- 3. ESQUEMAS ---
 class SimulacionRiesgo(BaseModel):
     distancia_km: float
     salario: float
     desempeno: float
 
-# --- Dependencia de Base de Datos ---
+class NuevoEmpleado(BaseModel):
+    puesto_id: int
+    departamento_id: int
+    distancia_oficina_km: int
+    salario: float = 25000.0
+    desempeno: float = 3.5
+
+# --- 4. DEPENDENCIA DB ---
 async def get_db():
     async with SessionLocal() as session:
         yield session
 
-# --- RUTAS ORIGINALES ---
+# --- 5. ENDPOINTS ---
 @app.get("/")
 async def root():
-    return {"mensaje": "El servidor del Motor Predictivo está en línea."}
+    return {"mensaje": "Motor Predictivo V2.1 en línea."}
+
+@app.post("/api/v1/login")
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
+    resultado = await db.execute(select(UsuarioAdmin).filter(UsuarioAdmin.email == form_data.username))
+    admin = resultado.scalars().first()
+    
+    if not admin or not verificar_password(form_data.password, admin.hashed_password):
+        raise HTTPException(status_code=400, detail="Correo o contraseña incorrectos")
+        
+    token = crear_token_acceso(datos={"sub": admin.email})
+    return {"access_token": token, "token_type": "bearer"}
 
 @app.get("/api/v1/empleados")
-async def obtener_empleados(limite: int = 5, db: AsyncSession = Depends(get_db)):
-    resultado = await db.execute(select(Empleado).limit(limite))
-    empleados = resultado.scalars().all()
+async def obtener_empleados(limite: int = 100, db: AsyncSession = Depends(get_db)):
+    # Cruzamos empleados con su salario y evaluación en una sola consulta relacional
+    query = (
+        select(
+            Empleado,
+            HistorialSalario.monto_mensual,
+            EvaluacionDesempeno.puntuacion_kpi
+        )
+        .outerjoin(HistorialSalario, Empleado.id == HistorialSalario.empleado_id)
+        .outerjoin(EvaluacionDesempeno, Empleado.id == EvaluacionDesempeno.empleado_id)
+        .order_by(Empleado.fecha_contratacion.desc())
+        .limit(limite)
+    )
+    resultado = await db.execute(query)
+    filas = resultado.all()
     
     datos = []
-    for emp in empleados:
+    for emp, salario, desempeno in filas:
         datos.append({
             "id": str(emp.id),
             "departamento_id": emp.departamento_id,
             "puesto_id": emp.puesto_id,
             "fecha_contratacion": emp.fecha_contratacion,
             "distancia_oficina_km": emp.distancia_oficina_km,
-            "estado_activo": emp.estado_activo
+            "estado_activo": emp.estado_activo,
+            "salario": salario if salario is not None else 0.0,
+            "desempeno": desempeno if desempeno is not None else 0.0
         })
     return {"total_mostrados": len(datos), "datos": datos}
 
-# --- NUEVO ENDPOINT 3.4: EL SIMULADOR DE IA ---
 @app.post("/api/v1/predicciones/simulador")
 async def simular_riesgo(datos: SimulacionRiesgo):
     if modelo_ia is None:
         raise HTTPException(status_code=500, detail="El modelo predictivo no está disponible.")
+    df_entrada = pd.DataFrame([{"distancia_km": datos.distancia_km, "salario": datos.salario, "desempeno": datos.desempeno}])
+    prediccion = modelo_ia.predict(df_entrada)[0]
+    probabilidad = modelo_ia.predict_proba(df_entrada)[0][1]
     
-    # Transformamos el JSON recibido a un DataFrame idéntico al que usamos para entrenar
-    df_entrada = pd.DataFrame([{
-        "distancia_km": datos.distancia_km,
-        "salario": datos.salario,
-        "desempeno": datos.desempeno
-    }])
-    
-    # La Inferencia (La IA piensa y decide)
-    prediccion = modelo_ia.predict(df_entrada)[0] # 0 = Se queda, 1 = Renuncia
-    probabilidad = modelo_ia.predict_proba(df_entrada)[0][1] # Qué tan seguro está del 0 al 1
-    
-    # Formateamos el resultado
     return {
         "alerta": "🔴 ALTO RIESGO DE FUGA" if prediccion == 1 else "🟢 EMPLEADO ESTABLE",
         "probabilidad_renuncia": f"{probabilidad * 100:.2f}%",
         "parametros_analizados": datos.model_dump()
     }
+
+@app.post("/api/v1/empleados", summary="Contratar Empleado (Protegido)")
+async def contratar_empleado(empleado: NuevoEmpleado, db: AsyncSession = Depends(get_db), admin: str = Depends(obtener_admin_actual)):
+    nuevo = Empleado(
+        puesto_id=empleado.puesto_id,
+        departamento_id=empleado.departamento_id,
+        distancia_oficina_km=empleado.distancia_oficina_km,
+        fecha_contratacion=date.today(),
+        estado_activo=True
+    )
+    db.add(nuevo)
+    await db.flush() # Genera el UUID antes del commit
+    
+    # Insertamos su salario inicial y su primera evaluación
+    historial = HistorialSalario(
+        empleado_id=nuevo.id,
+        monto_mensual=empleado.salario,
+        fecha_cambio=date.today(),
+        motivo="Contratación Inicial"
+    )
+    evaluacion = EvaluacionDesempeno(
+        empleado_id=nuevo.id,
+        fecha_evaluacion=date.today(),
+        puntuacion_kpi=empleado.desempeno,
+        cumplimiento_metas=empleado.desempeno * 20
+    )
+    db.add_all([historial, evaluacion])
+    await db.commit()
+    await db.refresh(nuevo)
+    return {"mensaje": "Empleado contratado exitosamente", "id": str(nuevo.id), "admin_responsable": admin}
+
+@app.delete("/api/v1/empleados/{empleado_id}", summary="Dar de Baja (Protegido)")
+async def dar_de_baja(empleado_id: uuid.UUID, db: AsyncSession = Depends(get_db), admin: str = Depends(obtener_admin_actual)):
+    resultado = await db.execute(select(Empleado).filter(Empleado.id == empleado_id))
+    emp = resultado.scalars().first()
+    
+    if not emp:
+        raise HTTPException(status_code=404, detail="Empleado no encontrado")
+        
+    emp.estado_activo = False
+    await db.commit()
+    return {"mensaje": "Empleado dado de baja exitosamente", "admin_responsable": admin}
