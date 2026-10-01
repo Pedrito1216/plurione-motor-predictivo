@@ -113,7 +113,7 @@ function Dashboard() {
   const [cargando, setCargando] = useState(true)
   
   // Simulador
-  const [formSimulador, setFormSimulador] = useState({ distancia_km: 10, salario: 25000, desempeno: 3.5 })
+  const [formSimulador, setFormSimulador] = useState({ distancia_km: , salario: , desempeno: })
   const [resultadoSimulacion, setResultadoSimulacion] = useState(null)
   const [simulando, setSimulando] = useState(false)
 
@@ -286,7 +286,24 @@ useEffect(() => {
           {resultadoSimulacion && (
             <div style={{ marginTop: '25px', padding: '15px', borderRadius: '8px', backgroundColor: resultadoSimulacion.alerta.includes('ALTO') ? '#fef2f2' : '#f0fdf4', border: `1px solid ${resultadoSimulacion.alerta.includes('ALTO') ? '#fca5a5' : '#86efac'}` }}>
               <h3 style={{ margin: '0 0 10px 0', fontSize: '1.1rem', color: resultadoSimulacion.alerta.includes('ALTO') ? '#991b1b' : '#166534' }}>{resultadoSimulacion.alerta}</h3>
-              <p style={{ margin: 0, fontWeight: 'bold', fontSize: '1.2rem', color: '#0f172a' }}>Probabilidad: {resultadoSimulacion.probabilidad_renuncia}</p>
+              <p style={{ margin: '0 0 15px 0', fontWeight: 'bold', fontSize: '1.2rem', color: '#0f172a' }}>Probabilidad: {resultadoSimulacion.probabilidad_renuncia}</p>
+              
+              {/* NUEVA SECCIÓN: DATOS ANALIZADOS Y EXPLICACIÓN DE IA */}
+              <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '5px', fontSize: '0.9rem', color: '#334155', border: '1px solid #e2e8f0' }}>
+                <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', color: '#1e293b' }}>Resumen del Perfil Evaluado:</p>
+                <ul style={{ margin: '0 0 12px 0', paddingLeft: '20px' }}>
+                  <li><strong>Salario:</strong> ${resultadoSimulacion.parametros_analizados.salario.toLocaleString('es-MX')} MXN</li>
+                  <li><strong>Distancia:</strong> {resultadoSimulacion.parametros_analizados.distancia_km} km</li>
+                  <li><strong>Desempeño:</strong> {resultadoSimulacion.parametros_analizados.desempeno} / 5.0</li>
+                </ul>
+                <div style={{ padding: '10px', backgroundColor: '#f8fafc', borderRadius: '5px', borderLeft: '3px solid #3b82f6' }}>
+                  <p style={{ margin: 0, fontStyle: 'italic', color: '#475569', lineHeight: '1.4' }}>
+                    <strong style={{ color: '#2563eb', fontStyle: 'normal' }}>💡 Diagnóstico IA: </strong> 
+                    {resultadoSimulacion.razonamiento}
+                  </p>
+                </div>
+              </div>
+              
             </div>
           )}
         </div>
