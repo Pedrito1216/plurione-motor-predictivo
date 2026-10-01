@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, Link, Outlet, useLocation } from 'react-router-dom'
 import api from './api'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { Users, UserCheck, UserMinus, Activity, LogOut, Lock, PlusCircle, Trash2, X, List, Shield } from 'lucide-react'
+import { Users, UserCheck, UserMinus, Activity, LogOut, Lock, PlusCircle, Trash2, X, List, Shield, Download } from 'lucide-react'
 
 // ==========================================
 // 1. PANTALLA DE INICIO DE SESIÓN
@@ -113,7 +113,7 @@ function Dashboard() {
   const [cargando, setCargando] = useState(true)
   
   // Simulador
-  const [formSimulador, setFormSimulador] = useState({ distancia_km: , salario: , desempeno: })
+  const [formSimulador, setFormSimulador] = useState({ distancia_km: 0, salario: 0, desempeno: 0})
   const [resultadoSimulacion, setResultadoSimulacion] = useState(null)
   const [simulando, setSimulando] = useState(false)
 
@@ -140,6 +140,45 @@ useEffect(() => {
     } catch (error) { console.error(error) }
     setSimulando(false)
   }
+
+const descargarReporte = () => {
+    if (!resultadoSimulacion) return;
+    
+    const { alerta, probabilidad_renuncia, parametros_analizados, razonamiento } = resultadoSimulacion;
+    const fecha = new Date().toLocaleString('es-MX');
+    
+    // Armamos el texto del archivo
+    const contenido = `================================================
+REPORTE PREDICTIVO DE ROTACIÓN - PLURIONE
+Fecha de Emisión: ${fecha}
+================================================
+
+[ RESULTADO DEL ANÁLISIS ]
+Estado: ${alerta.replace('🔴', '[ALTO RIESGO]').replace('🟢', '[ESTABLE]')}
+Probabilidad de Renuncia: ${probabilidad_renuncia}
+
+[ PERFIL EVALUADO ]
+Salario Mensual: $${parametros_analizados.salario.toLocaleString('es-MX')} MXN
+Distancia a la Oficina: ${parametros_analizados.distancia_km} km
+Evaluación de Desempeño: ${parametros_analizados.desempeno} / 5.0
+
+[ DIAGNÓSTICO DE INTELIGENCIA ARTIFICIAL ]
+${razonamiento}
+
+================================================
+Generado por el Motor Predictivo V2.1
+Plataforma Administrativa PluriOne
+`;
+
+    // Creamos el archivo virtual y forzamos la descarga en el navegador
+    const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+    const enlace = document.createElement('a');
+    enlace.href = URL.createObjectURL(blob);
+    enlace.download = `Reporte_IA_PluriOne_${Date.now()}.txt`;
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
+  };
 
   // Cálculos principales
   const totalEmpleados = empleados.length;
@@ -288,7 +327,6 @@ useEffect(() => {
               <h3 style={{ margin: '0 0 10px 0', fontSize: '1.1rem', color: resultadoSimulacion.alerta.includes('ALTO') ? '#991b1b' : '#166534' }}>{resultadoSimulacion.alerta}</h3>
               <p style={{ margin: '0 0 15px 0', fontWeight: 'bold', fontSize: '1.2rem', color: '#0f172a' }}>Probabilidad: {resultadoSimulacion.probabilidad_renuncia}</p>
               
-              {/* NUEVA SECCIÓN: DATOS ANALIZADOS Y EXPLICACIÓN DE IA */}
               <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '5px', fontSize: '0.9rem', color: '#334155', border: '1px solid #e2e8f0' }}>
                 <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', color: '#1e293b' }}>Resumen del Perfil Evaluado:</p>
                 <ul style={{ margin: '0 0 12px 0', paddingLeft: '20px' }}>
@@ -303,7 +341,12 @@ useEffect(() => {
                   </p>
                 </div>
               </div>
-              
+
+              {/* NUEVO BOTÓN DE DESCARGA */}
+              <button onClick={descargarReporte} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '12px', marginTop: '15px', backgroundColor: '#475569', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.backgroundColor = '#334155'} onMouseOut={e => e.currentTarget.style.backgroundColor = '#475569'}>
+                <Download size={18} /> Descargar Reporte (TXT)
+              </button>
+
             </div>
           )}
         </div>
