@@ -65,6 +65,11 @@ class NuevoEmpleado(BaseModel):
     salario: float = 25000.0
     desempeno: float = 3.5
 
+class NuevoAdmin(BaseModel):
+    email: str
+    password: str
+    nombre_completo: str
+
 # --- 4. DEPENDENCIA DB ---
 async def get_db():
     async with SessionLocal() as session:
@@ -87,8 +92,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
     return {"access_token": token, "token_type": "bearer"}
 
 @app.get("/api/v1/empleados")
-async def obtener_empleados(limite: int = 100, db: AsyncSession = Depends(get_db)):
-    # Cruzamos empleados con su salario y evaluación en una sola consulta relacional
+async def obtener_empleados(db: AsyncSession = Depends(get_db)):
+    # Cruzamos empleados con su salario y evaluación sin NINGÚN límite
     query = (
         select(
             Empleado,
@@ -98,7 +103,7 @@ async def obtener_empleados(limite: int = 100, db: AsyncSession = Depends(get_db
         .outerjoin(HistorialSalario, Empleado.id == HistorialSalario.empleado_id)
         .outerjoin(EvaluacionDesempeno, Empleado.id == EvaluacionDesempeno.empleado_id)
         .order_by(Empleado.fecha_contratacion.desc())
-        .limit(limite)
+        # Eliminamos la línea de .limit() para traer el 100% del histórico
     )
     resultado = await db.execute(query)
     filas = resultado.all()
@@ -172,3 +177,36 @@ async def dar_de_baja(empleado_id: uuid.UUID, db: AsyncSession = Depends(get_db)
     emp.estado_activo = False
     await db.commit()
     return {"mensaje": "Empleado dado de baja exitosamente", "admin_responsable": admin}
+
+# --- 7. ENDPOINTS DE ACCESOS (Solo Administradores) ---
+@app.get("/api/v1/admins", summary="Listar Administradores (Protegido)")
+async def obtener_admins(db: AsyncSession = Depends(get_db), admin_actual: str = Depends(obtener_admin_actual)):
+    # Solo devolvemos datos seguros (jamás la contraseña)
+    resultado = await db.execute(select(UsuarioAdmin.id, UsuarioAdmin.email, UsuarioAdmin.nombre_completo, UsuarioAdmin.fecha_creacion))
+    admins = resultado.all()
+    
+    datos = [{"id": str(a.id), "email": a.email, "nombre_completo": a.nombre_completo, "fecha_creacion": a.fecha_creacion} for a in admins]
+    return datos
+
+@app.post("/api/v1/admins", summary="Registrar Nuevo Admin (Protegido)")
+async def crear_admin(datos: NuevoAdmin, db: AsyncSession = Depends(get_db), admin_actual: str = Depends(obtener_admin_actual)):
+    import bcrypt
+    
+    # Verificamos que el correo no exista ya
+    resultado = await db.execute(select(UsuarioAdmin).filter(UsuarioAdmin.email == datos.email))
+    if resultado.scalars().first():
+        raise HTTPException(status_code=400, detail="Este correo ya tiene acceso administrativo")
+        
+    # Encriptamos la contraseña del nuevo colega
+    sal = bcrypt.gensalt()
+    contrasena_encriptada = bcrypt.hashpw(datos.password.encode('utf-8'), sal).decode('utf-8')
+    
+    nuevo_admin = UsuarioAdmin(
+        email=datos.email,
+        hashed_password=contrasena_encriptada,
+        nombre_completo=datos.nombre_completo
+    )
+    db.add(nuevo_admin)
+    await db.commit()
+    
+    return {"mensaje": f"Acceso concedido exitosamente para {datos.nombre_completo}"}

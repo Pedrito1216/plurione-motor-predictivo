@@ -1,0 +1,20 @@
+Enfoque API-First con Supabase, FastAPI y React
+Esta arquitectura separa claramente las responsabilidades. El modelo predictivo (entrenado con XGBoost o Scikit-learn) se envuelve en una API ligera construida con FastAPI, la cual recibe los datos del empleado y devuelve la probabilidad de rotación. La gestión de la base de datos (PostgreSQL), el esquema de usuarios de Recursos Humanos y la autenticación se delegan completamente a Supabase. El frontend se construye en React para consumir esta API y mostrar el panel administrativo con las alertas tempranas.
+
+Prototipado Rápido Orientado a Datos con Streamlit y PostgreSQL
+Diseñado para validar el modelo de Machine Learning con los stakeholders antes de invertir tiempo en una interfaz web compleja. El backend se programa en Python procesando los datos directamente de PostgreSQL. En lugar de construir el frontend en React, se utiliza Streamlit (un framework de Python para apps de datos) para generar rápidamente un dashboard interactivo donde los evaluadores puedan ajustar variables (clima laboral, ausentismo) y ver cómo cambia el riesgo de rotación en tiempo real.
+
+Arquitectura de Microservicios Contenerizados con Docker
+Ideal para escalar la solución a largo plazo. Se divide el sistema en dos servicios independientes: un microservicio desarrollado en Node.js o Python puro para realizar el CRUD (Crear, Leer, Actualizar, Borrar) de los expedientes de los empleados, y un microservicio analítico en FastAPI exclusivamente dedicado a la inferencia del modelo predictivo. Ambos servicios y la base de datos PostgreSQL se empaquetan y orquestan utilizando Docker Compose, asegurando que el entorno de desarrollo sea idéntico al de producción.
+
+Solución Híbrida con Herramientas Low-Code (FastAPI + Retool)
+Este enfoque minimiza el desarrollo del frontend para enfocarse cien por ciento en el algoritmo predictivo y la ingeniería de datos. El modelo de Inteligencia Artificial y las consultas a la base de datos se exponen a través de endpoints seguros en Python. En lugar de programar el dashboard ejecutivo desde cero, se conecta esta API a una plataforma como Retool o Appsmith, ensamblando la interfaz de usuario con bloques preconstruidos (tablas, gráficos, formularios) en cuestión de días.
+
+Desarrollo Monolítico Robusto con Django y React
+Si la empresa requiere reglas de negocio complejas y validaciones estrictas en el manejo de personal, se utiliza Django. Este framework de Python maneja de forma centralizada la base de datos relacional mediante su ORM, la seguridad y las sesiones de usuario. El modelo predictivo se integra como un módulo interno de la aplicación Django. Los datos procesados y las predicciones se sirven a través de Django REST Framework hacia una Single Page Application construida en React.
+
+Serverless Functions para Inferencia Escalonada (Next.js + Python Serverless)
+Toda la plataforma administrativa, incluyendo el frontend y el backend tradicional, se unifica utilizando Next.js (un framework de React). Sin embargo, como Next.js opera principalmente en entornos de JavaScript/TypeScript, el cálculo matemático pesado para estimar el riesgo de rotación se externaliza. Cuando Recursos Humanos solicita una evaluación, Next.js hace una petición HTTP a una función "Serverless" independiente (escrita en Python) que despierta, ejecuta el modelo XGBoost, devuelve la predicción y vuelve a apagarse.
+
+Ecosistema Cloud Integrado (Azure Web Apps + Azure Database)
+Aunque se evitan las herramientas costosas de Azure ML, la infraestructura se despliega en un entorno unificado en la nube para cumplir con estándares corporativos. El modelo predictivo de Python se aloja en un Azure App Service, conectándose a una instancia administrada de Azure Database for PostgreSQL. Las GitHub Actions se configuran para que, con cada push en el repositorio, el código se pruebe automáticamente y se despliegue en la nube, garantizando integración y entrega continuas.

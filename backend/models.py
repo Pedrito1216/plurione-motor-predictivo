@@ -1,7 +1,19 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Boolean, Date, ForeignKey, DateTime
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func
 from database import Base
 import uuid
+
+# --- NUEVA TABLA DE ADMINISTRADORES ---
+class UsuarioAdmin(Base):
+    __tablename__ = 'usuarios_admin'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    nombre_completo = Column(String, nullable=False)
+    is_active = Column(Boolean, default=True)
+    fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
 
 # --- Catálogos ---
 class Departamento(Base):
