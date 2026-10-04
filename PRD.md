@@ -1,49 +1,82 @@
-# Documento de Requerimientos del Producto (PRD)
+# Product Requirements Document (PRD)
 
-**Proyecto:** Motor Predictivo de Rotación de Personal  
-**Empresa:** PluriOne S.A. de C.V. (Develop Talent & Technology)  
-**Autor:** Pedro Gabriel Ocampo Rojas
-**Fecha:** .. de Septiembre de 2026  
+**PluriOne V2.1 — Motor Predictivo de Rotación de Personal**  
+* **Autor:** Pedro Gabriel Ocampo Rojas  
+* **Fecha:** Octubre 2026  
+* **Proyecto:** Prueba de Concepto (PoC) - Modelo Dual TESE / TODO Academy  
 
 ---
 
-## 1. Propósito y Visión General
-El objetivo de este proyecto es desarrollar e implementar una **Prueba de Concepto (PoC)** de un sistema analítico avanzado capaz de estimar el riesgo de que un colaborador abandone la empresa. Al ser un desarrollo del programa académico Dual, el sistema operará en un entorno simulado. Mediante el uso de modelos de Machine Learning, el sistema procesará información histórica generada paramétricamente para generar alertas tempranas, demostrando cómo el departamento de Recursos Humanos de PluriOne podría transitar de un enfoque reactivo a uno proactivo.
+## 1. Resumen Ejecutivo (Executive Summary)
 
-## 2. Alcance del Proyecto
+El índice de rotación de personal (*Churn Rate*) representa uno de los mayores costos operativos y organizacionales para las empresas contemporáneas. PluriOne nace como una plataforma SaaS (*Software as a Service*) orientada a los departamentos de Recursos Humanos.
 
-**Dentro del alcance (Lo que sí se hará):**
-*   Desarrollo de un script automatizado en Python para generar un dataset sintético de 1,000+ perfiles de empleados con patrones lógicos de rotación.
-*   Diseño y normalización de una base de datos relacional (PostgreSQL) para almacenar los perfiles generados.
-*   Desarrollo de una API REST (FastAPI) para gestionar la comunicación entre los datos y el usuario.
-*   Entrenamiento e integración de un modelo predictivo supervisado (Python) para calcular el % de riesgo de fuga.
-*   Desarrollo de un Dashboard web (React) para visualizar los niveles de riesgo, métricas clave y generar reportes.
+La solución integra algoritmos de Inteligencia Artificial y Machine Learning para predecir el riesgo de fuga de talento basándose en variables operativas, económicas y demográficas. Esto permite a las direcciones de capital humano e instructores tomar decisiones proactivas y fundamentadas en datos para la retención efectiva del personal.
 
-**Fuera del alcance (Lo que NO se hará):**
-*   No se utilizarán datos reales de los colaboradores de PluriOne ni se conectará a sus sistemas ERP/Nómina internos por motivos de confidencialidad.
-*   El sistema no tomará decisiones automatizadas de despido, contratación o incrementos salariales.
+---
 
-## 3. Historias de Usuario (Casos de Uso)
-Para entender cómo interactuarán los usuarios con el sistema, se definen las siguientes historias:
-1.  **Como analista de RRHH**, quiero visualizar un panel principal con la lista de empleados ordenados por su nivel de riesgo de rotación (Alto, Medio, Bajo), para enfocar mis esfuerzos de retención en los casos más críticos.
-2.  **Como líder de proyecto**, quiero poder ingresar un nuevo perfil o actualizar los datos de un empleado existente (ej. agregar una nueva evaluación de desempeño), para que el sistema recalcule su riesgo de salida en tiempo real.
-3.  **Como directivo**, quiero ver métricas globales (ej. tasa de riesgo general de la empresa, departamentos con mayor riesgo) para tomar decisiones estratégicas sobre el clima laboral.
+## 2. Objetivos del Producto
 
-## 4. Requerimientos de Datos y Generación Sintética
-El modelo predictivo se entrenará utilizando un dataset ficticio. El script de generación de datos simulará correlaciones estadísticas realistas (ej. bajos salarios y alta distancia al trabajo incrementan el riesgo) sobre las siguientes variables:
-*   **Demográficas/Laborales:** Antigüedad en la empresa, departamento, nivel de puesto, salario/rango salarial.
-*   **Desempeño y Capacitación:** Calificación de la última evaluación de desempeño, horas de capacitación completadas, desarrollo profesional reciente.
-*   **Comportamiento y Clima:** Índice de ausentismo (días faltados en el último semestre), resultados de encuestas de clima laboral, registro de horas extra.
+* **Predecir:** Identificar proactivamente qué empleados presentan un alto riesgo de renuncia mediante un modelo supervisado de Random Forest.
+* **Explicar (XAI):** Proporcionar transparencia algorítmica. El sistema no solo entrega un porcentaje de probabilidad, sino que provee un diagnóstico en lenguaje natural con las causas raíz (ej. salario bajo en relación al alto desempeño y gran distancia de traslado).
+* **Gestionar:** Ofrecer un panel de administración CRUD seguro para la gestión integral de la plantilla laboral, conservando el historial de bajas para reentrenar y nutrir continuamente la IA.
+* **Asegurar:** Garantizar la confidencialidad, integridad y disponibilidad de la información corporativa sensible mediante autenticación robusta de múltiples capas (JWT y encriptación Bcrypt).
 
-## 5. Requerimientos Técnicos
-*   **Backend:** Python 3.x, FastAPI.
-*   **Base de Datos:** PostgreSQL (con SQLAlchemy o SQLModel como ORM).
-*   **Inteligencia Artificial:** Scikit-learn / XGBoost para el entrenamiento del modelo.
-*   **Frontend:** React.js.
-*   **Seguridad:** Autenticación de usuarios mediante tokens JWT en la API.
+---
 
-## 6. Criterios de Aceptación (Éxito del Proyecto)
-El proyecto se considerará exitoso y listo para la fase de cierre cuando:
-1.  El modelo predictivo logre una precisión (Accuracy / F1-Score) aceptable y superior a un modelo aleatorio o base.
-2.  El Dashboard web permita hacer el CRUD (Crear, Leer, Actualizar, Eliminar) de los empleados sin errores.
-3.  Al actualizar el dato de un empleado en el Dashboard, la predicción de riesgo cambie correctamente respondiendo a los datos ingresados.
+## 3. Público Objetivo (User Personas)
+
+| Rol / Persona | Necesidades Principales | Caso de Uso en PluriOne |
+| :--- | :--- | :--- |
+| **Gerentes de Recursos Humanos** | Visualizar métricas globales de la empresa para reportes ejecutivos. | Consulta de KPIs de rotación, balance contrataciones vs. bajas y análisis de cohortes. |
+| **Analistas de Retención** | Evaluar perfiles específicos en riesgo y tomar medidas preventivas. | Uso del simulador predictivo para evaluar ajustes salariales o modalidad Home Office. |
+| **Administradores de TI** | Controlar el acceso seguro a la plataforma y gestionar permisos. | Alta y baja de usuarios directivos en el panel de control de accesos. |
+
+---
+
+## 4. Alcance del MVP (Versión 2.1)
+
+El Producto Mínimo Viable (MVP) entregado en esta fase consta de cinco módulos integrados:
+
+* **Módulo de Autenticación:** Inicio de sesión protegido. Prevención de accesos no autorizados mediante interceptores en frontend y guardias de ruta.
+* **Dashboard Analítico con Drill-down:** KPIs interactivos (Muestra analizada, Activos, Bajas, Tasa de rotación), gráfica de barras (Distancia vs. Retención) y gráfica de líneas (Análisis de cohortes).
+* **Motor Predictivo con Exportación:** Simulador de IA con variables de entrada (Salario, Distancia, Desempeño). Devuelve nivel de alerta, probabilidad estimada y diagnóstico detallado, con capacidad de exportar los resultados a TXT.
+* **Directorio General y CRUD:** Tabla de visualización masiva, registro de nuevas contrataciones y borrado lógico de empleados (pasan a estado inactivo para preservar métricas históricas).
+* **Control de Accesos:** Panel restringido para la creación y administración de nuevos usuarios con rol de administrador.
+
+---
+
+## 5. Requisitos Funcionales
+
+* **RF-01:** El sistema debe permitir a un usuario autenticarse de forma segura mediante credenciales de correo electrónico y contraseña.
+* **RF-02:** El sistema debe permitir registrar la contratación de un nuevo empleado, asignándole salario, datos operativos y evaluación inicial.
+* **RF-03:** El sistema debe permitir el borrado lógico (baja) de un empleado activo mediante una acción directa de un solo clic.
+* **RF-04:** El simulador de IA debe admitir el ingreso de distancia, salario y nivel de desempeño para retornar el nivel de riesgo y la justificación textual estructurada.
+* **RF-05:** El sistema debe permitir la descarga del reporte predictivo individual en un archivo de texto plano (`.txt`).
+* **RF-06:** Los usuarios administradores deben poder crear cuentas para otros administradores desde un panel de acceso protegido.
+
+---
+
+## 6. Requisitos No Funcionales
+
+* **Seguridad:** Las contraseñas deben ser hasheadas con el algoritmo Bcrypt. Todas las peticiones a la API backend deben requerir un token JWT tipo Bearer en la cabecera HTTP.
+* **Escalabilidad:** El backend construido en FastAPI debe ser completamente asíncrono. La capa de persistencia debe utilizar una base de datos relacional PostgreSQL.
+* **Desempeño:** La interfaz gráfica en React debe operar como una *Single Page Application* (SPA), evitando recargas completas del navegador al cambiar de vistas.
+* **Disponibilidad del Modelo:** El modelo Scikit-Learn comprimido (`.pkl`) debe cargarse en memoria RAM desde el arranque del servidor para ofrecer predicciones en tiempo real sin latencia de disco.
+
+---
+
+## 7. Tecnologías Utilizadas (Stack Tecnológico)
+
+* **Frontend:** React, React Router, Recharts, Axios, Lucide React, Vite.
+* **Backend:** Python, FastAPI, SQLAlchemy, PyJWT, Passlib (Bcrypt).
+* **Base de Datos:** PostgreSQL.
+* **Data Science / Machine Learning:** Scikit-Learn (Random Forest Classifier), Pandas, Joblib, NumPy.
+
+---
+
+## 8. Criterios de Éxito
+
+1. **Sincronización en tiempo real:** El sistema procesa altas y bajas reflejándolas en los gráficos del dashboard inmediatamente, sin requerir paginación bloqueante o recargas manuales.
+2. **Coherencia predictiva:** El motor detecta combinaciones de alto riesgo y devuelve un diagnóstico explicable, coherente y directamente accionable por el equipo de RRHH.
+3. **Protección de endpoints:** Las rutas privadas del backend rechazan cualquier petición no autorizada respondiendo con código de estado `HTTP 401 Unauthorized`.
