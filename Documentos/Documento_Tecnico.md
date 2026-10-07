@@ -70,7 +70,6 @@ El ciclo de vida para generar alertas tempranas y recomendaciones[cite: 1] sigue
 8. React actualiza la interfaz mostrando una alerta (Verde, Amarilla o Roja) según el porcentaje obtenido.
 
 ### 2.3 Representación Visual (Diagrama)
-*(Nota: El siguiente bloque genera un diagrama automático si tu editor soporta Mermaid.js, como GitHub, GitLab o Notion).*
 
 ```mermaid
 graph TD
