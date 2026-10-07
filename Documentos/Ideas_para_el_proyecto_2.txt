@@ -1,4 +1,4 @@
-Enfoque API-First con Supabase, FastAPI y React
+Enfoque API-First con Supabase (lo cambie por PostgreSQL), FastAPI y React (me quede con esta)
 Esta arquitectura separa claramente las responsabilidades. El modelo predictivo (entrenado con XGBoost o Scikit-learn) se envuelve en una API ligera construida con FastAPI, la cual recibe los datos del empleado y devuelve la probabilidad de rotación. La gestión de la base de datos (PostgreSQL), el esquema de usuarios de Recursos Humanos y la autenticación se delegan completamente a Supabase. El frontend se construye en React para consumir esta API y mostrar el panel administrativo con las alertas tempranas.
 
 Prototipado Rápido Orientado a Datos con Streamlit y PostgreSQL
