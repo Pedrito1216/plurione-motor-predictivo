@@ -2,7 +2,7 @@
 
 ## Capítulo 1: Diseño de Base de Datos (PostgreSQL)
 
-Para capturar de forma precisa el ciclo de vida laboral de los colaboradores y proveer información histórica confiable al Motor Predictivo, se ha diseñado una base de datos relacional transaccional (OLTP) en PostgreSQL[cite: 1]. 
+Para capturar de forma precisa el ciclo de vida laboral de los colaboradores y proveer información histórica confiable al Motor Predictivo, se ha diseñado una base de datos relacional transaccional (OLTP) en PostgreSQL. 
 
 El esquema está compuesto por 8 tablas diseñadas hasta la Tercera Forma Normal (3NF), separando la información estandarizada, los datos fijos del empleado y su historial de comportamiento.
 
@@ -33,32 +33,32 @@ En lugar de sobrescribir datos, el sistema registra cada evento en el tiempo. Es
 | `registro_ausentismos` | `id` (PK)<br>`empleado_id` (FK)<br>`fecha_falta`<br>`motivo_justificado` (Boolean) | Control granular de ausencias. Picos de ausentismo injustificado son fuertes predictores de abandono. |
 
 ### 1.4 Integración con Machine Learning (Vista Materializada)
-Para evitar que el modelo predictivo realice consultas relacionales complejas (`JOINs` múltiples) que degraden el rendimiento en tiempo de ejecución, la base de datos implementará una **Vista Materializada (Materialized View)** en PostgreSQL[cite: 1]. 
+Para evitar que el modelo predictivo realice consultas relacionales complejas (`JOINs` múltiples) que degraden el rendimiento en tiempo de ejecución, la base de datos implementará una **Vista Materializada (Materialized View)** en PostgreSQL. 
 
 Esta vista se actualizará periódicamente y se encargará de aplanar y calcular métricas consolidadas por empleado (ej. *salario_actual*, *meses_desde_ultimo_aumento*, *promedio_desempeno_anual*, *total_ausencias_semestre*), entregando un vector de características (Feature Vector) optimizado y listo para la ingesta directa del modelo de Inteligencia Artificial.
 
 ## Capítulo 2: Arquitectura de Software e Integración
 
 ### 2.1 Patrón Arquitectónico
-El Proyecto de Desarrollo de un Motor Predictivo de Rotación de Personal[cite: 1] operará bajo una arquitectura **Cliente-Servidor API-First**. Este enfoque separa completamente la interfaz de usuario (Frontend) de la lógica de negocio y procesamiento de datos (Backend), permitiendo que los modelos de aprendizaje automático[cite: 1] se ejecuten de forma aislada y segura en el servidor.
+El Proyecto de Desarrollo de un Motor Predictivo de Rotación de Personal operará bajo una arquitectura **Cliente-Servidor API-First**. Este enfoque separa completamente la interfaz de usuario (Frontend) de la lógica de negocio y procesamiento de datos (Backend), permitiendo que los modelos de aprendizaje automático se ejecuten de forma aislada y segura en el servidor.
 
 El sistema se compone de cuatro capas lógicas:
 
-*   **Capa de Presentación (Frontend - React.js[cite: 1]):**
+*   **Capa de Presentación (Frontend - React.js):**
     *   Es una Single Page Application (SPA) responsable de renderizar el Dashboard interactivo, las tablas de empleados y las gráficas de riesgo.
     *   Gestiona el estado de la aplicación y almacena de forma segura el token JWT para mantener la sesión activa del usuario.
-*   **Capa Lógica y de Orquestación (Backend - Python y FastAPI[cite: 1]):**
+*   **Capa Lógica y de Orquestación (Backend - Python y FastAPI):**
     *   Actúa como el cerebro del sistema. Recibe las peticiones HTTP (GET, POST, PUT, DELETE) desde la interfaz en React.
     *   Contiene los controladores que validan permisos (Autenticación JWT) y gestionan el acceso a la base de datos relacional.
-*   **Capa Analítica (Machine Learning - Scikit-learn y XGBoost[cite: 1]):**
+*   **Capa Analítica (Machine Learning - Scikit-learn y XGBoost):**
     *   Un módulo analítico cargado en memoria por FastAPI al iniciar el servidor (archivo `.pkl` o `.joblib`).
-    *   Recibe los vectores de datos consolidados del empleado y retorna la estimación del riesgo de rotación[cite: 1].
-*   **Capa de Persistencia de Datos (PostgreSQL[cite: 1]):**
+    *   Recibe los vectores de datos consolidados del empleado y retorna la estimación del riesgo de rotación.
+*   **Capa de Persistencia de Datos (PostgreSQL):**
     *   Almacena las tablas relacionales con el historial transaccional de la plantilla laboral.
     *   Utiliza una **Vista Materializada (Materialized View)** que pre-calcula y aplana la información para entregarla rápidamente al modelo predictivo sin saturar el procesador con operaciones relacionales complejas en tiempo de ejecución.
 
 ### 2.2 Diagrama de Flujo de Datos (Inferencia)
-El ciclo de vida para generar alertas tempranas y recomendaciones[cite: 1] sigue esta secuencia exacta:
+El ciclo de vida para generar alertas tempranas y recomendaciones sigue esta secuencia exacta:
 
 1. El usuario selecciona a un empleado en el panel de React y solicita una evaluación de riesgo.
 2. React envía una petición HTTP REST hacia FastAPI.
