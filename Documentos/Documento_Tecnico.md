@@ -95,7 +95,7 @@ graph TD
     class API backend;
     class DB database;
     class ML model;
-
+```
 ## Capítulo 3: Especificación de Rutas y Endpoints de la API
 
 La API REST del Motor Predictivo se diseñó bajo las convenciones estándar del protocolo HTTP, versionado de URL (`/api/v1`) y respuestas en formato JSON. Todas las rutas protegidas requieren el envío de un encabezado de autorización HTTP con el esquema Bearer: `Authorization: Bearer <token_jwt>`.
